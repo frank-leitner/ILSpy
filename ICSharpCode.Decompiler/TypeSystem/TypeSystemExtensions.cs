@@ -482,7 +482,7 @@ namespace ICSharpCode.Decompiler.TypeSystem
 
 		#region IEntity.GetAttribute
 		/// <summary>
-		/// Gets whether the entity has an attribute of the specified attribute type (or derived attribute types).
+		/// Gets whether the entity has an attribute of the specified attribute type.
 		/// </summary>
 		/// <param name="entity">The entity on which the attributes are declared.</param>
 		/// <param name="attributeType">The attribute type to look for.</param>
@@ -491,13 +491,16 @@ namespace ICSharpCode.Decompiler.TypeSystem
 		/// (if the given <paramref name="entity"/> in an <c>override</c>)
 		/// should be returned.
 		/// </param>
-		public static bool HasAttribute(this IEntity entity, KnownAttribute attributeType, bool inherit = false)
+		public static bool HasAttribute(this IEntity entity, KnownAttribute attributeType, bool inherit)
 		{
+			if (!inherit)
+				return entity.HasAttribute(attributeType);
+
 			return GetAttribute(entity, attributeType, inherit) != null;
 		}
 
 		/// <summary>
-		/// Gets the attribute of the specified attribute type (or derived attribute types).
+		/// Gets the attribute of the specified attribute type.
 		/// </summary>
 		/// <param name="entity">The entity on which the attributes are declared.</param>
 		/// <param name="attributeType">The attribute type to look for.</param>
@@ -511,9 +514,27 @@ namespace ICSharpCode.Decompiler.TypeSystem
 		/// If inherit is true, an from the entity itself will be returned if possible;
 		/// and the base entity will only be searched if none exists.
 		/// </returns>
-		public static IAttribute GetAttribute(this IEntity entity, KnownAttribute attributeType, bool inherit = false)
+		public static IAttribute GetAttribute(this IEntity entity, KnownAttribute attributeType, bool inherit)
 		{
-			return GetAttributes(entity, inherit).FirstOrDefault(a => a.AttributeType.IsKnownType(attributeType));
+			if (inherit)
+			{
+				if (entity is ITypeDefinition td)
+				{
+					return InheritanceHelper.GetAttribute(td, attributeType);
+				}
+				else if (entity is IMember m)
+				{
+					return InheritanceHelper.GetAttribute(m, attributeType);
+				}
+				else
+				{
+					throw new NotSupportedException("Unknown entity type");
+				}
+			}
+			else
+			{
+				return entity.GetAttribute(attributeType);
+			}
 		}
 
 		/// <summary>
@@ -556,7 +577,7 @@ namespace ICSharpCode.Decompiler.TypeSystem
 
 		#region IParameter.GetAttribute
 		/// <summary>
-		/// Gets whether the parameter has an attribute of the specified attribute type (or derived attribute types).
+		/// Gets whether the parameter has an attribute of the specified attribute type.
 		/// </summary>
 		/// <param name="parameter">The parameter on which the attributes are declared.</param>
 		/// <param name="attributeType">The attribute type to look for.</param>
@@ -566,7 +587,7 @@ namespace ICSharpCode.Decompiler.TypeSystem
 		}
 
 		/// <summary>
-		/// Gets the attribute of the specified attribute type (or derived attribute types).
+		/// Gets the attribute of the specified attribute type.
 		/// </summary>
 		/// <param name="parameter">The parameter on which the attributes are declared.</param>
 		/// <param name="attributeType">The attribute type to look for.</param>
